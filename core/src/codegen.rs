@@ -11,7 +11,14 @@ pub(crate) fn codegen(expanded: ExpandedConditionalQueryAs) -> proc_macro2::Toke
         let patterns = &arm.patterns;
         let variant = format_ident!("Variant{}", idx);
         let output_type = &expanded.output_type;
-        let query_fragments = &arm.query_fragments;
+        // To work around rust-analyzer's macro parsing issue, concatenate
+        // the query fragments into a single string.
+        // https://github.com/rust-lang/rust-analyzer/issues/18686#issuecomment-2781187108
+        let query: String = arm
+            .query_fragments
+            .iter()
+            .map(syn::LitStr::value)
+            .collect();
         let run_time_bindings =
             arm.run_time_bindings
                 .iter()
@@ -25,7 +32,7 @@ pub(crate) fn codegen(expanded: ExpandedConditionalQueryAs) -> proc_macro2::Toke
                 ConditionalMap::#variant(
                     ::sqlx::query_as!(
                         #output_type,
-                        #(#query_fragments)+*,
+                        #query,
                         #(#run_time_bindings),*
                     )
                 )

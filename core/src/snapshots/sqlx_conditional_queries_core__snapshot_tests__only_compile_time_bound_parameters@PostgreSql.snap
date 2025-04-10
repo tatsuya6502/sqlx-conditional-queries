@@ -1,7 +1,7 @@
 ---
 source: core/src/snapshot_tests.rs
+assertion_line: 62
 expression: prettyprint(output)
-snapshot_kind: text
 ---
 fn dummy() {
     {
@@ -102,8 +102,7 @@ fn dummy() {
                 ConditionalMap::Variant0(
                     ::sqlx::query_as!(
                         OutputType,
-                        "\n            SELECT column\n            FROM table\n            WHERE value = "
-                        + "value" + "\n        ",
+                        "\n            SELECT column\n            FROM table\n            WHERE value = value\n        ",
                     ),
                 )
             }
