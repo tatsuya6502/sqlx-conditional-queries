@@ -6,19 +6,31 @@ use crate::expand::ExpandedConditionalQueryAs;
 /// The match arms and the respective query fragments are now used to generate a giant match
 /// statement, which covers all variants of the bindings' match statements' cartesian products.
 pub(crate) fn codegen(expanded: ExpandedConditionalQueryAs) -> proc_macro2::TokenStream {
+    let original_query_string = &expanded.original_query_string;
+
     let mut match_arms = Vec::new();
     for (idx, arm) in expanded.match_arms.iter().enumerate() {
         let patterns = &arm.patterns;
         let variant = format_ident!("Variant{}", idx);
         let output_type = &expanded.output_type;
+
         // To work around rust-analyzer's macro parsing issue, concatenate
         // the query fragments into a single string.
         // https://github.com/rust-lang/rust-analyzer/issues/18686#issuecomment-2781187108
-        let query: String = arm
-            .query_fragments
-            .iter()
-            .map(syn::LitStr::value)
-            .collect();
+        let query: String = arm.query_fragments.iter().map(syn::LitStr::value).collect();
+        // Try to join all the spans of the query fragments into a single span.
+        // This is currently only works on Rust nightly. If not on nightly,
+        // the span of the original_query_string will be used.
+        let query_span =
+            arm.query_fragments
+                .iter()
+                .fold(original_query_string.span(), |acc, frag| {
+                    // Span::join only works on nightly. It will return
+                    // None if not on nightly.
+                    acc.join(frag.span()).unwrap_or(acc)
+                });
+        let query = syn::LitStr::new(&query, query_span);
+
         let run_time_bindings =
             arm.run_time_bindings
                 .iter()
@@ -46,6 +58,16 @@ pub(crate) fn codegen(expanded: ExpandedConditionalQueryAs) -> proc_macro2::Toke
     quote! {
         {
             #conditional_map
+
+            r#"
+                -----------------------------
+                hack: syntax highlighting support
+                To make rust-analyzer to recognize the original query string
+                as a string literal, we embed it here in the generated code.
+                Without this, rust-analyzer may consider it as a variable.
+            "#;
+            #original_query_string;
+            "-----------------------------";
 
             match (#(#match_expressions,)*) {
                 #(#match_arms)*

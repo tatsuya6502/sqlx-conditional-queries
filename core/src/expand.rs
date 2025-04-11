@@ -17,6 +17,7 @@ pub(crate) struct ExpandedConditionalQueryAs {
     pub(crate) output_type: syn::Ident,
     pub(crate) match_expressions: Vec<syn::Expr>,
     pub(crate) match_arms: Vec<MatchArm>,
+    pub(crate) original_query_string: syn::LitStr,
 }
 
 #[derive(Debug)]
@@ -164,6 +165,7 @@ pub(crate) fn expand(
         output_type: lowered.output_type,
         match_expressions: lowered.match_expressions,
         match_arms,
+        original_query_string: lowered.query_string,
     })
 }
 

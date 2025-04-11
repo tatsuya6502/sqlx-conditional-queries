@@ -97,6 +97,19 @@ fn dummy() {
                 }
             }
         }
+        r#"
+                -----------------------------
+                hack: syntax highlighting support
+                To make rust-analyzer to recognize the original query string
+                as a string literal, we embed it here in the generated code.
+                Without this, rust-analyzer may consider it as a variable.
+            "#;
+        r#"
+            SELECT column
+            FROM table
+            WHERE value = {#value}
+        "#;
+        "-----------------------------";
         match (value,) {
             (_,) => {
                 ConditionalMap::Variant0(
